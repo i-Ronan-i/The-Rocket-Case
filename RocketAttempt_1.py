@@ -307,7 +307,7 @@ def sysRocket(t, x):
 
 teval = np.linspace(0, tfin, int(tfin*10))
 x_ini = [rocket.Re, 0.0, rocket.M0]  # initial conditions
-solga = solve_ivp(sysRocket, [tref[0], tfin], x_ini, t_eval=teval) #, first_step=0.000001, method='LSODA', min_step=0.000001
+solga = odient.(sysRocket, [tref[0], tfin], x_ini, t_eval=teval) #, first_step=0.000001, method='LSODA', min_step=0.000001
 y_out = solga.y[0, :] #Velocity????
 t_out = solga.t
 
