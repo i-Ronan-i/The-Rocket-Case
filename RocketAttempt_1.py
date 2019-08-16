@@ -76,9 +76,131 @@ def create_initial(pop_num, pop, kd_min, kd_max, kp_min, kp_max, ki_min, ki_max)
     return pop
 
 
+def crossover(a, b):
+    """Finding cut-points for crossover
+    and joining the two parts of the two members
+    of the population together. """
+    new_a = []  #Clearing previous 
+    cut_a = random.randint(1, len(a)-1) #Makes sure there is always a cut
+
+    new_a1 = a[0 : cut_a]
+    new_a2 = b[cut_a : len(b)]
+
+    #Creates the new crossed-over list
+    new_a = new_a1 + new_a2
+
+    # Weight Check #
+    ################
+    #add weights and check if = 1
+    #if not new weights: w_m = 1 - w_r - w_v
+
+    return new_a
 
 
+def mutate(pop, mut_prob, kd_min, kd_max, kp_min, kp_max, ki_min, ki_max): 
+    """Takes current population member and add a probability chance to the PID parameters
+    that it mutates via a 50:50 chance that it is reduced or increased
+    by 10%. 
+    However, for the weights only one is mutated if picked and the others moulded around that."""
+    pop_curr = pop
+    for i in range(0, len(pop_curr)):
+        weight_mut = False
+        for o in range(len(pop_curr[i])-3) :
+            if random.random() <= mut_prob:
+                if random.random() < 0.5:
+                    pop_curr[i][o] = round(pop_curr[i][o] * 0.95, 2) #Maintains 2 d.p
+                else :
+                    pop_curr[i][o] = round(pop_curr[i][o] * 1.05, 2)
+                    if pop_curr[i][0] or pop[i][1] or pop[i][2] > kp_max:
+                        pop_curr[i][o] = float(kp_max) 
+                    if pop_curr[i][3] or pop[i][4] or pop[i][5] > ki_max :
+                        pop_curr[i][o] = float(ki_max)
+                    if pop_curr[i][6] or pop[i][7] or pop[i][8] > kd_max :
+                        pop_curr[i][o] = float(kd_max)
+        #Weight Mutation.               
+        for o in range(len(pop_curr[i]-3), len(pop_curr)):
+            if random.random() <= mut_prob:
+                weight_mut = True
+                if random.random() < 0.5:
+                    pop_curr[i][o] = round(pop_curr[i][o] * 0.95, 2) #Maintains 2 d.p
+                else:
+                    pop_curr[i][o] = round(pop_curr[i][o] * 1.05, 2)
+            if weight_mut == True:
+                if o == len(pop_curr)-3 : # w_r
+                                # w_v = 1 - w_r - w_m
+                    pop_curr[i][o+1] = 1 - pop_curr[i][o] - pop_curr[i][o+2]
+                if o == len(pop_curr)-2 : # w_v
+                                # w_m = 1 - w_v - w_r
+                    pop_curr[i][o+1] = 1 - pop_curr[i][o] - pop_curr[i][o-1]
+                if o == len(pop_curr)-1 : # w_m
+                                # w_r = 1 - w_m
+                    pop_curr[i][o-2] = 1 - pop_curr[i][o] - pop_curr[i][o-1]
+                #Ensures only 1 mutation occurs
+                o = len(pop_curr)
+    return pop_curr
 
+
+def create_next_generation(pop, pop_num, fit_val, mut_prob, kd_min, kd_max, kp_min, kp_max, ki_min, ki_max):
+    """Top 20 reproduce(crossover, mutation), top 5 remain, 15 randomly created."""
+    #Saves top 3 performing genomes
+    pop_top = []
+    for m in range(3) :
+        pop_top.append(pop[m])
+
+    #Crossover performed in top 20
+    pop_cross = []
+    for n in range(25):
+        new_pop1 = crossover(pop[n], pop[n+1])
+        pop_cross.append(new_pop1)
+
+    #Adds all currently available members
+    #Then mutates them.
+    pop_new = []
+    pop_premut = []
+    pop_premut = pop_top + pop_cross
+    pop_new = mutate(pop_premut, mut_prob, kd_min, kd_max, kp_min, kp_max, ki_min, ki_max)
+
+    #Create random members and saves them    
+    for s in range(pop_num - len(pop_new)):
+        #Creating the random PID values
+        kp_r = round(random.uniform(kp_min, kp_max), 2)
+        kp_v = round(random.uniform(kp_min, kp_max), 2)
+        kp_m = round(random.uniform(kp_min, kp_max), 2)
+        ki_r = round(random.uniform(ki_min, ki_max), 2)
+        ki_v = round(random.uniform(ki_min, ki_max), 2)
+        ki_m = round(random.uniform(ki_min, ki_max), 2)
+        kd_r = round(random.uniform(kd_min, kd_max), 2)
+        kd_v = round(random.uniform(kd_min, kd_max), 2)
+        kd_m = round(random.uniform(kd_min, kd_max), 2)
+
+        #creating the weights 
+        w_r = round(random.random(), 2)
+        w_v = round(random.uniform(0, 1-w_r), 2)
+        w_m = round(1 - w_r - w_v, 2)
+
+        #Into 2-D List. Access via pop[i][j]
+        pop_new.append([kp_r, kp_v, kp_m, ki_r, ki_v, ki_m, kd_r, kd_v, kd_m, w_r, w_v, w_m])
+    return pop_new
+
+def fit_sort(pop, fit_val):
+    #This sorts the population into descending fitness (ascending order)
+    switches = 1
+    while switches > 0:
+        switches = 0
+        for i in range(len(fit_val)-1) :
+            for j in range(i+1, len(fit_val)) : 
+                if fit_val[i] > fit_val[j] :
+                    temp = fit_val[i]
+                    fit_val[i] = fit_val[j]
+                    fit_val[j] = temp
+
+                    temp2 = pop[i]
+                    pop[i] = pop[j]
+                    pop[j] = temp2
+
+                    switches = switches + 1        
+    #Pop list is now sorted. 
+    return pop, fit_val
 #####################################################################################################
 ##################################### I N T E G R A T I O N #########################################
 #####################################################################################################
