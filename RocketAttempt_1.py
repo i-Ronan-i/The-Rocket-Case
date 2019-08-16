@@ -1,3 +1,9 @@
+
+########################################################################################################
+"""Using a set of 3 Genetic Algorithm tuned PID controllers to control the thrust of a rocket along 
+a trajectory with pre-optimised position, velocity and mass."""                                     
+########################################################################################################
+
 import numpy as np
 from scipy.integrate import solve_ivp, RK23, odeint, simps
 from scipy.interpolate import PchipInterpolator
@@ -7,10 +13,8 @@ import matplotlib.pyplot as plt
 import random
 import time
 
-""" Using a set of 3 Genetic Algorithm tuned PID controllers to control the thrust of a rocket along 
-a trajectory with pre-optimised position, velocity and mass. """
-
-###### Define rocket flying parameters parameters #####
+#################################################################################################
+####################### Define rocket flying parameters parameters ##############################
 class Rocket:
     GMe = 3.986004418 * 10**14  # Earth gravitational constant [m^3/s^2]
     Re = 6371.0 * 1000  # Earth Radius [m]
@@ -31,8 +35,8 @@ class Rocket:
         return rho0*np.exp(-beta*h)
 
 rocket = Rocket()
-#####
 ######################################################################################################
+############################################# L O A D ###############################################
 #Load from reference files and interpolate paths.
 Rref = np.load("R.npy")
 Vref = np.load("V.npy")
@@ -45,14 +49,43 @@ mfun = PchipInterpolator(tref, mref)
 
 ###############################################################################################################
 #################################################             #################################################
-#################################################  B E G I N  #################################################
+#################################################  GA  CODE  #################################################
 ######################################                                   ######################################
 ###############################################################################################################
+def create_initial(pop_num, pop, kd_min, kd_max, kp_min, kp_max, ki_min, ki_max):
+    """Creates the initial population of the genetic algorithm while making sure it adheres to force constraints"""
+    for s in range(pop_num):
+        #Creating the random PID values
+        kp_r = round(random.uniform(kp_min, kp_max), 2)
+        kp_v = round(random.uniform(kp_min, kp_max), 2)
+        kp_m = round(random.uniform(kp_min, kp_max), 2)
+        ki_r = round(random.uniform(ki_min, ki_max), 2)
+        ki_v = round(random.uniform(ki_min, ki_max), 2)
+        ki_m = round(random.uniform(ki_min, ki_max), 2)
+        kd_r = round(random.uniform(kd_min, kd_max), 2)
+        kd_v = round(random.uniform(kd_min, kd_max), 2)
+        kd_m = round(random.uniform(kd_min, kd_max), 2)
 
-#pop = [[kp_r, kp_v, kp_m, ki_r, ki_v, ki_m, kd_r, kd_v, kd_m, w_r, w_v, w_m]]
-pop = [[210.0, 342.0, 524.0, 631.0, 512.0, 134.0, 535.0, 485.0, 183.0, 0.33, 0.33, 0.34]]
+        #creating the weights 
+        w_r = round(random.random(), 2)
+        w_v = round(random.uniform(0, 1-w_r), 2)
+        w_m = round(1 - w_r - w_v, 2)
 
-s=0
+        #Into 2-D List. Access via pop[i][j]
+        pop.insert(s, [kp_r, kp_v, kp_m, ki_r, ki_v, ki_m, kd_r, kd_v, kd_m, w_r, w_v, w_m])
+    return pop
+
+
+
+
+
+#####################################################################################################
+##################################### I N T E G R A T I O N #########################################
+#####################################################################################################
+s_time = []
+s_iter = 0
+er_save, ev_save, em_save, R_save = [], [], [], []
+
 Kp_r = pop[s][0]
 Kp_v = pop[s][1]
 Kp_m = pop[s][2]
@@ -65,15 +98,6 @@ Kd_m = pop[s][8]
 W_r = pop[s][9]
 W_v = pop[s][10]
 W_m = pop[s][11]
-
-
-#####################################################################################################
-##################################### I N T E G R A T I O N #########################################
-#####################################################################################################
-s_time = []
-s_iter = 0
-er_save, ev_save, em_save, R_save = [], [], [], []
-
 def sysRocket(t, x):
     global s_iter, s_time
     s_time.append(t)
