@@ -5,7 +5,7 @@ a trajectory with pre-optimised position, velocity and mass."""
 ########################################################################################################
 
 import numpy as np
-from scipy.integrate import solve_ivp, RK23, odeint, simps
+from scipy.integrate import solve_ivp, RK23, simps, BDF, RK45
 from scipy.interpolate import PchipInterpolator
 import pylab as pylab
 from pylab import plot,xlabel,ylabel,title,legend,figure,subplots
@@ -208,6 +208,8 @@ s_time = []
 s_iter = 0
 er_save, ev_save, em_save, R_save = [], [], [], []
 
+pop = [[12.4, 53.6, 13.5, 655.3,123.4, 245.1, 52.6,123.5, 543.6, 0.32, 0.3, 0.34]]
+s=0
 Kp_r = pop[s][0]
 Kp_v = pop[s][1]
 Kp_m = pop[s][2]
@@ -224,6 +226,7 @@ def sysRocket(t, x):
     global s_iter, s_time
     s_time.append(t)
     flag = False
+
     # State Variables
     R = x[0]
     V = x[1]
@@ -273,13 +276,13 @@ def sysRocket(t, x):
         ev_i = simps([ev_save[s_iter-1], ev_save[s_iter]], x=[s_time[s_iter-1], s_time[s_iter]])
         em_i = simps([em_save[s_iter-1], em_save[s_iter]], x=[s_time[s_iter-1], s_time[s_iter]])
            #differentiate ( last error to current error ) over time (last time to current time)
-        er_d = np.gradient([er_save[s_iter-1], er_save[s_iter]], [s_time[s_iter-1], s_time[s_iter]])
-        ev_d = np.gradient([ev_save[s_iter-1], ev_save[s_iter]], [s_time[s_iter-1], s_time[s_iter]])
-        em_d = np.gradient([em_save[s_iter-1], em_save[s_iter]], [s_time[s_iter-1], s_time[s_iter]])
+        #er_d = np.gradient([er_save[s_iter-1], er_save[s_iter]], [s_time[s_iter-1], s_time[s_iter]])
+        #ev_d = np.gradient([ev_save[s_iter-1], ev_save[s_iter]], [s_time[s_iter-1], s_time[s_iter]])
+        #em_d = np.gradient([em_save[s_iter-1], em_save[s_iter]], [s_time[s_iter-1], s_time[s_iter]])
 
-    T_pid_r = Kp_r*er + Ki_r*er_i - Kd_r*er_d[0]
-    T_pid_v = Kp_v*ev + Ki_v*ev_i - Kd_v*ev_d[0]
-    T_pid_m = Kp_m*em + Ki_m*em_i - Kd_m*em_d[0]
+    T_pid_r = Kp_r*er + Ki_r*er_i #- Kd_r*er_d[0]
+    T_pid_v = Kp_v*ev + Ki_v*ev_i #- Kd_v*ev_d[0]
+    T_pid_m = Kp_m*em + Ki_m*em_i #- Kd_m*em_d[0]
 
     T = W_r * T_pid_r + W_v * T_pid_v + W_m * T_pid_v
     if T > rocket.Tmax:
@@ -305,11 +308,10 @@ def sysRocket(t, x):
     dxdt[2] = - T / g0 / Isp
     return dxdt[0], dxdt[1], dxdt[2]
 
-teval = np.linspace(0, tfin, int(tfin*10))
-x_ini = [rocket.Re, 0.0, rocket.M0]  # initial conditions
-solga = odient.(sysRocket, [tref[0], tfin], x_ini, t_eval=teval) #, first_step=0.000001, method='LSODA', min_step=0.000001
-y_out = solga.y[0, :] #Velocity????
-t_out = solga.t
+teval = np.linspace(tref[0], tfin, int(tfin*10))
+x_init = [rocket.Re, 0.0, rocket.M0]  # initial conditions
+solga = solve_ivp(sysRocket, (tref[0], tfin), x_init, t_eval=teval)
+#solga = RK45(sysRocket, tref[0], x_init, tfin) #, first_step=0.000001, method='LSODA', min_step=0.000001
 
 
 #Plotting code
