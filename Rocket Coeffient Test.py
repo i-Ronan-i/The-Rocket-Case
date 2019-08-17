@@ -175,11 +175,11 @@ def selfRocketSolve(x_init, pop):
 ##############################################################################################################
 ##############################################################################################################
 
-pop = []
-#time elapsed in creation = 
+pop = [783.44, 409.92, 398.84, 979.96, 490.63, 864.6, 301.5, 696.93, 283.18, 0.62, 0.36, 0.02]
+#time elapsed in creation = 27.29260202248891  minutes.
 x_init = [rocket.Re, 0.0, rocket.M0]  # initial conditions
 
-r_path, v_path, m_path = selfRocketSolve(x_init, pop[0])
+r_path, v_path, m_path = selfRocketSolve(x_init, pop)
 
 r_error = 0.0
 v_error = 0.0
@@ -193,10 +193,14 @@ err_val = r_error + v_error + m_error
 fit_val = err_val
 
 print("Top overall Coefficients are: ", pop[0])
-print("Fitness value of top performing member: ", round(fit_val[0], 4))
+print("Fitness value of top performing member: ", round(fit_val, 4))
+
+for i in range(len(r_path)):
+    r_path[i] = r_path[i]/1000
 
 #Plot Position
 plt.plot(tref, Rref/1000, "r--", label="Set point - Position [m]")
+plt.plot(tref, r_path, label = "System Position [m]") 
 plt.xlabel('Time [s]')
 plt.ylabel('Altitude [km]')
 plt.title('Rocket Position Setpoint')
@@ -207,7 +211,8 @@ plt.grid()
 plt.show()
 
 #Plot Velocity
-plt.plot(tref, Vref, "g--", label="Set Point - Velocity [m/s]")
+plt.plot(tref, Vref, "r--", label="Set Point - Velocity [m/s]")
+plt.plot(tref, v_path, label = "System Velocity [m/s]") 
 plt.xlabel('Time [s]')
 plt.ylabel('Velocity [m/s]')
 plt.title('Rocket Velocity Setpoint')
@@ -217,7 +222,8 @@ plt.grid()
 plt.show()
 
 #Plot Mass
-plt.plot(tref, mref, "b--", label="Set Point - Mass [kg]")
+plt.plot(tref, mref, "r--", label="Set Point - Mass [kg]")
+plt.plot(tref, m_path, label = "System Mass [kg]") 
 plt.xlabel('Time [s]')
 plt.ylabel('Mass [kg]')
 plt.title('Rocket Mass Setpoint')

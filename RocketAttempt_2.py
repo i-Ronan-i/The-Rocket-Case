@@ -365,7 +365,7 @@ x_init = [rocket.Re, 0.0, rocket.M0]  # initial conditions
 pop_num = 60    #How large the initial population is
 pop = []
 mut_prob = 0.08  #probability for mutation set here
-iteration_max = 1 #Total number of iterations and generations set here
+iteration_max = 60 #Total number of iterations and generations set here
 #Minimum and maximum PID coefficient gains.
 kd_min, kd_max = 0, 1000
 kp_min, kp_max = 0, 1000
@@ -408,7 +408,7 @@ plt.show()
 
 #Plot Velocity
 plt.plot(tref, Vref, "r--", label="Set Point - Velocity [m/s]")
-plt.plot(tref, V_path, label = "System Velocity [m/s]") 
+plt.plot(tref, v_path, label = "System Velocity [m/s]") 
 plt.xlabel('Time [s]')
 plt.ylabel('Velocity [m/s]')
 plt.title('System Response - Velocity')
