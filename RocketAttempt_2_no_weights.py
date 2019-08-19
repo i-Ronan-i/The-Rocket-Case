@@ -180,7 +180,7 @@ def selfRocketSolve(x_init, pop):
         T_pid_v = Kp_v*ev + Ki_v*ev_i - Kd_v*ev_d[0]
         T_pid_m = Kp_m*em + Ki_m*em_i - Kd_m*em_d[0]
 
-        T =  T_pid_r + T_pid_v + T_pid_m
+        T = T_pid_r + T_pid_v + T_pid_m
         if T > rocket.Tmax:
             T = rocket.Tmax
             thrust_maxed = True
@@ -223,7 +223,6 @@ def create_initial(pop_num, pop, kd_min, kd_max, kp_min, kp_max, ki_min, ki_max)
         kd_r = round(random.uniform(kd_min, kd_max), 2)
         kd_v = round(random.uniform(kd_min, kd_max), 2)
         kd_m = round(random.uniform(kd_min, kd_max), 2)
-
         #Into 2-D List. Access via pop[i][j]
         pop.insert(s, [kp_r, kp_v, kp_m, ki_r, ki_v, ki_m, kd_r, kd_v, kd_m])
     return pop
@@ -342,7 +341,7 @@ def fitness(pop):
         v_error = 0.0
         m_error = 0.0
         for i in range(len(tref)):
-                r_error = r_error + abs(Rref[i] - r_path[i])
+                r_error = r_error + abs(Rref[i] - r_path[i])/10#To account for magnitude overshadowing other values
                 v_error = v_error + abs(Vref[i] - v_path[i])
                 m_error = m_error + abs(mref[i] - m_path[i])
         err_val = r_error + v_error + m_error
@@ -365,7 +364,7 @@ ki_min, ki_max = 0, 1000
 
 iteration = 0
 while iteration < iteration_max:
-    print("Iteration: ", iteration)
+    print("Iteration No Weights: ", iteration)
     if iteration == 0:
         pop = create_initial(pop_num, pop, kd_min, kd_max, kp_min, kp_max, ki_min, ki_max)
         fit_val = fitness(pop)
@@ -382,7 +381,7 @@ while iteration < iteration_max:
 
 #This is the final section with the top solution being chosen and used
 #Final simulation run
-print("End of iterations.")
+print("End of iterations No Weights: ", iteration)
 pop, fit_val = fit_sort(pop, fit_val)
 print("Top overall Coefficients are: ", pop[0])
 print("Fitness value of top performing member: ", round(fit_val[0], 4))
@@ -395,7 +394,7 @@ plt.plot(tref, Rref, "r--", label="Set point command [m]")
 plt.plot(tref, r_path, label = "System Position [m]") 
 plt.xlabel('Time [s]')
 plt.ylabel('Altitude [m]')
-plt.title('System Response - Position')
+plt.title('System Response - Position No Weights')
 #plt.xticks(np.arange(0, tref[-1], step=2))
 plt.legend()
 plt.grid()
@@ -406,7 +405,7 @@ plt.plot(tref, Vref, "r--", label="Set Point - Velocity [m/s]")
 plt.plot(tref, v_path, label = "System Velocity [m/s]") 
 plt.xlabel('Time [s]')
 plt.ylabel('Velocity [m/s]')
-plt.title('System Response - Velocity')
+plt.title('System Response - Velocity No Weights')
 #plt.xticks(np.arange(0, tref[-1], step=2))
 plt.legend()
 plt.grid()
@@ -417,7 +416,7 @@ plt.plot(tref, mref, "r--", label="Set Point - Mass [kg]")
 plt.plot(tref, m_path, label = "System Mass [kg]") 
 plt.xlabel('Time [s]')
 plt.ylabel('Mass [kg]')
-plt.title('System Response - Mass')
+plt.title('System Response - Mass No Weights')
 #plt.xticks(np.arange(0, tref[-1], step=2))
 plt.legend()
 plt.grid()
