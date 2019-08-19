@@ -51,9 +51,9 @@ def selfRocketSolve(x_init, pop):
     Kd_r = pop[6]
     Kd_v = pop[7]
     Kd_m = pop[8]
-    W_r = pop[9]
-    W_v = pop[10]
-    W_m = pop[11]
+    #W_r = pop[9]
+    #W_v = pop[10]
+    #W_m = pop[11]
     R_path = []
     V_path = []
     m_path = []
@@ -63,6 +63,9 @@ def selfRocketSolve(x_init, pop):
     er_save = []
     ev_save = []
     em_save = []
+    err_save = []
+    evv_save = []
+    emm_save = []
     dRdt = [0,0,0]
     #Main Loop for solve
     for i in range(len(tref)):
@@ -80,6 +83,28 @@ def selfRocketSolve(x_init, pop):
                 R = x[0]
                 V = x[1]
                 m = x[2]
+
+                #Conditions of flight constraint
+                if R - rocket.Re < 0:
+                    R = rocket.Re
+                    ground = True
+                if m < rocket.M0*rocket.Mc:
+                    m = rocket.M0*rocket.Mc
+                    nofuel = True
+                elif m > rocket.M0:
+                    m = rocket.M0
+                    tooheavy = True
+                if abs(V) > 1e3:
+                    speedmax = True
+                    if V > 0:
+                        V = 1e3
+                    else:
+                        V = -1e3 
+
+                rho = rocket.air_density(R - rocket.Re)
+                drag = 0.5 * rho * V ** 2 * rocket.Cd * rocket.area
+                g = rocket.GMe / R ** 2
+
                 dxdt = [0, 0, 0]
                 dxdt[0] = V
                 dxdt[1] = (T - drag) / m - g
@@ -148,7 +173,8 @@ def selfRocketSolve(x_init, pop):
         T_pid_v = Kp_v*ev + Ki_v*ev_i - Kd_v*ev_d[0]
         T_pid_m = Kp_m*em + Ki_m*em_i - Kd_m*em_d[0]
 
-        T = W_r * T_pid_r + W_v * T_pid_v + W_m * T_pid_v
+        #T = W_r * T_pid_r + W_v * T_pid_v + W_m * T_pid_m
+        T = T_pid_r + T_pid_v + T_pid_m
         if T > rocket.Tmax:
             T = rocket.Tmax
             thrust_maxed = True
@@ -174,9 +200,20 @@ def selfRocketSolve(x_init, pop):
     return R_path, V_path, m_path
 ##############################################################################################################
 ##############################################################################################################
+#pop = [979.25, 968.03, 89.4, 508.96, 140.99, 576.34, 38.42, 591.68, 853.42] #no weights halfway results
+#pop = [1000.0, 1000.0, 89.18, 726.86, 842.59, 985.53, 42.04, 591.68, 916.54] #no weights generation 28
 
-pop = [783.44, 409.92, 398.84, 979.96, 490.63, 864.6, 301.5, 696.93, 283.18, 0.62, 0.36, 0.02]
-#time elapsed in creation = 27.29260202248891  minutes.
+#pop = [803.3, 1000.0, 137.42, 1000.0, 282.22, 106.79, 351.84, 609.02, 936.74, 1.0, 0.0, 0.0] # / error by weight factor
+    #Fitness value of top performing member:  1,328,556.213
+    #Time elapsed:  489.50  minutes.
+#pop = [949.88, 822.21, 620.6, 616.12, 429.04, 40.69, 41.46, 48.38, 997.5, 0.84, 0.16, 0.0] # Original
+    #Fitness value of top performing member:  1,017,078.2062
+    #Time elapsed:  492.20  minutes.
+pop = [1000.0, 1000.0, 103.24, 974.06, 796.46, 985.53, 42.04, 591.68, 916.54] #weight removed
+    #Fitness value of top performing member:  554116.1454
+    #Time elapsed:  493.4378672281901  minutes.
+
+#time elapsed in creation = 545.34 minutes.
 x_init = [rocket.Re, 0.0, rocket.M0]  # initial conditions
 
 r_path, v_path, m_path = selfRocketSolve(x_init, pop)
@@ -185,7 +222,7 @@ r_error = 0.0
 v_error = 0.0
 m_error = 0.0
 for i in range(len(tref)):
-    r_error = r_error + abs(Rref[i] - r_path[i])
+    r_error = r_error + abs(Rref[i] - r_path[i])/10
     v_error = v_error + abs(Vref[i] - v_path[i])
     m_error = m_error + abs(mref[i] - m_path[i])
 
@@ -200,10 +237,10 @@ for i in range(len(r_path)):
 
 #Plot Position
 plt.plot(tref, Rref/1000, "r--", label="Set point - Position [m]")
-plt.plot(tref, r_path, label = "System Position [m]") 
+plt.plot(tref, r_path, label = "Rocket Position [m]") 
 plt.xlabel('Time [s]')
 plt.ylabel('Altitude [km]')
-plt.title('Rocket Position Setpoint')
+plt.title('Rocket Position Over Time')
 plt.xticks(np.arange(0, 190.5, step=10))
 plt.yticks(np.arange(6370.0, 6440.1, step=10))
 plt.legend()
@@ -212,10 +249,10 @@ plt.show()
 
 #Plot Velocity
 plt.plot(tref, Vref, "r--", label="Set Point - Velocity [m/s]")
-plt.plot(tref, v_path, label = "System Velocity [m/s]") 
+plt.plot(tref, v_path, label = "Rocket Velocity [m/s]") 
 plt.xlabel('Time [s]')
 plt.ylabel('Velocity [m/s]')
-plt.title('Rocket Velocity Setpoint')
+plt.title('Rocket Velocity Over Time')
 plt.xticks(np.arange(0, 190.5, step=10))
 plt.legend()
 plt.grid()
@@ -226,7 +263,7 @@ plt.plot(tref, mref, "r--", label="Set Point - Mass [kg]")
 plt.plot(tref, m_path, label = "System Mass [kg]") 
 plt.xlabel('Time [s]')
 plt.ylabel('Mass [kg]')
-plt.title('Rocket Mass Setpoint')
+plt.title('Rocket Mass Over Time')
 plt.xticks(np.arange(0, 190.5, step=10))
 plt.legend()
 plt.grid()
